@@ -1,0 +1,17 @@
+# Virtual environment
+.venv/
+
+# Python cache files
+__pycache__/
+
+# Environment variables
+.env
+
+# Data files (if sensitive or large)
+data/
+
+#notebooks
+notebooks/
+
+#additional nb for testing
+testing.ipynb
