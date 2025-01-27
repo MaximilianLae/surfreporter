@@ -9,7 +9,7 @@ class SurfReportGenerator:
         self.spots = spots
         self.forecast = forecast
         genai.configure(api_key=GOOGLE_API_KEY)
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         
         # Configure safety settings (adjust as needed)
         self.safety_settings = [
