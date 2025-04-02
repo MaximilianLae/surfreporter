@@ -5,11 +5,12 @@ from config import GOOGLE_API_KEY
 from datetime import datetime
 
 class SurfReportGenerator:
-    def __init__(self, spots: List[Dict], forecast: Dict):
+    def __init__(self, spots: List[Dict], forecast: Dict, generation_model: str = 'gemini-2.0-flash-thinking-exp-01-21', temperature: float = 0.3):
         self.spots = spots
         self.forecast = forecast
         genai.configure(api_key=GOOGLE_API_KEY)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-01-21')
+        self.model = genai.GenerativeModel(generation_model)
+        self.temperature = temperature
         
         # Configure safety settings (adjust as needed)
         self.safety_settings = [
@@ -127,7 +128,7 @@ class SurfReportGenerator:
             contents=prompt,
             safety_settings=self.safety_settings,
             generation_config={
-                "temperature": 0.3,  # Lower temperature for more factual output
+                "temperature": self.temperature,  # Lower temperature for more factual output
                 "max_output_tokens": 1500
             }
         )

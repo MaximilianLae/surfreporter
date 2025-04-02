@@ -13,19 +13,6 @@ class SurfSpotRetriever:
         )
         self.pinecone = Pinecone(api_key=PINECONE_API_KEY)
         self.index = self.pinecone.Index("surfspots")
-
-    #def _build_metadata_filter(self, 
-     #                        preferred_direction: str, 
-      #                       preferred_bottom: str) -> Dict[str, Any]:
-       # """Construct Pinecone metadata filter with partial matching"""
-        ## Escape special characters and create case-insensitive regex patterns
-        #dir_pattern = re.escape(preferred_direction.strip())
-        #bottom_pattern = re.escape(preferred_bottom.strip())
-        
-        #return {
-         #   "direction_of_wave": {"$regex": f"(?i).*{dir_pattern}.*"},
-          #  "type_of_bottom": {"$regex": f"(?i).*{bottom_pattern}.*"}
-        #}
     
     def _build_metadata_filter(self, 
                                preferred_direction: str, 
