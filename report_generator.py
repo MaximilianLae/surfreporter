@@ -106,7 +106,7 @@ class SurfReportGenerator:
         prompt = f"""
         You are a professional surf reporter tasked with creating a cohesive weekend surf report.
         The report should flow as a single narrative that naturally integrates both the general forecast conditions
-        and the detailed characteristics of each surf spot.
+        and the detailed characteristics of each surf spot and it should be very tailored to the user's query.
 
         {forecast_overview}
 
@@ -118,6 +118,8 @@ class SurfReportGenerator:
         offering an analysis of how well the conditions suit the spot.
         - Provides recommendations for surfers of various skill levels.
         - Uses smooth transitions to connect the general forecast with the spot-specific details.
+
+        Pay close attention in all your responses to the user's query in terms of Faithfulness, Answer Relevancy and Context Relevancy.
 
         User Query: {user_query}
         """
