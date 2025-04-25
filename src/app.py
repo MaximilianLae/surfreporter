@@ -1,8 +1,8 @@
 # app.py
 import streamlit as st
-from search import SurfSpotRetriever
-from forecast import get_weekend_forecast
-from report_generator import SurfReportGenerator
+from .search import SurfSpotRetriever
+from .forecast import get_weekend_forecast
+from .report_generator import SurfReportGenerator
 
 def main():
     st.title("🏄 Weekend Surf Report Generator")

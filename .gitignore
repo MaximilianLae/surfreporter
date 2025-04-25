@@ -10,6 +10,5 @@ __pycache__/
 # Data files (if sensitive or large)
 data/
 
-
 #additional nb for testing
 testing.ipynb
