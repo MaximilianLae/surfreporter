@@ -1,4 +1,3 @@
-# report_generator.py
 from typing import List, Dict, Any
 from openai import OpenAI
 from config import OPENAI_API_KEY

@@ -1,4 +1,3 @@
-# search.py
 from pinecone import Pinecone
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from config import PINECONE_API_KEY, GOOGLE_API_KEY
