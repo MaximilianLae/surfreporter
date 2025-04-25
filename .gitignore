@@ -10,8 +10,6 @@ __pycache__/
 # Data files (if sensitive or large)
 data/
 
-#notebooks
-notebooks/
 
 #additional nb for testing
 testing.ipynb
