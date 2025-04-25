@@ -1,31 +1,25 @@
 # report_generator.py
 from typing import List, Dict, Any
-import google.generativeai as genai
-from config import GOOGLE_API_KEY
-from datetime import datetime
+from openai import OpenAI
+from config import OPENAI_API_KEY
 
 class SurfReportGenerator:
-    def __init__(self, spots: List[Dict], forecast: Dict, generation_model: str = 'gemini-2.0-flash-thinking-exp-01-21', temperature: float = 0.3):
+    def __init__(
+        self,
+        spots: List[Dict],
+        forecast: Dict,
+        generation_model: str = 'gpt-4o',
+        temperature: float = 0.3,
+        max_tokens: int = 1500
+    ):
         self.spots = spots
         self.forecast = forecast
-        genai.configure(api_key=GOOGLE_API_KEY)
-        self.model = genai.GenerativeModel(generation_model)
+        self.model = generation_model
         self.temperature = temperature
-        
-        # Configure safety settings (adjust as needed)
-        self.safety_settings = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_NONE",
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_NONE",
-            },
-        ]
+        self.max_tokens = max_tokens
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
 
     def _format_spot_info(self, spot: Dict) -> str:
-        """Include wave size and water temp in spot info"""
         return (
             f"Spot: {spot['name']}\n"
             f"Description: {spot['description'][:200]}...\n"
@@ -37,99 +31,90 @@ class SurfReportGenerator:
         )
 
     def _get_wave_size(self, spot_name: str) -> str:
-        """Get wave size range from forecast"""
         sizes = []
         for day in ['saturday', 'sunday']:
             if day in self.forecast:
-                sizes.append(
-                    f"{day.capitalize()}: {self.forecast[day]['swell_height_min']}-{self.forecast[day]['swell_height_max']}m"
-                )
+                d = self.forecast[day]
+                sizes.append(f"{day.capitalize()}: {d['swell_height_min']}-{d['swell_height_max']}m")
         return " | ".join(sizes)
 
     def _get_water_temp(self) -> str:
-        """Get water temp range from forecast"""
         temps = []
         for day in ['saturday', 'sunday']:
             if day in self.forecast:
-                temps.append(
-                    f"{self.forecast[day]['sea_surface_temp_min']}-{self.forecast[day]['sea_surface_temp_max']}°C"
-                )
+                d = self.forecast[day]
+                temps.append(f"{d['sea_surface_temp_min']}-{d['sea_surface_temp_max']}°C")
         return "/".join(sorted(set(temps)))
 
     def _extract_tide_info(self, description: str) -> str:
-        """Extract tide preferences from spot description"""
-        tide_keywords = {
-            'low tide': 'Low',
-            'mid tide': 'Mid',
-            'high tide': 'High'
-        }
-        found = set()
-        lower_desc = description.lower()
-        for kw, label in tide_keywords.items():
-            if kw in lower_desc:
-                found.add(label)
-        return ", ".join(sorted(found)) if found else "Not specified"
+        tide_keywords = {'low tide':'Low', 'mid tide':'Mid', 'high tide':'High'}
+        found = {label for kw,label in tide_keywords.items() if kw in description.lower()}
+        return ", ".join(sorted(found)) or "Not specified"
 
     def _format_forecast(self) -> str:
-        """Enhanced forecast formatting with dynamic descriptions"""
-        forecast_text = "General Forecast Overview:\n"
-        for day, data in self.forecast.items():
-            forecast_text += (
+        txt = "General Forecast Overview:\n"
+        for day,data in self.forecast.items():
+            txt += (
                 f"{day.capitalize()}:\n"
                 f"- Wave Height: {data['swell_height_min']}-{data['swell_height_max']}m\n"
                 f"- Swell Period: {data['swell_period_min']}-{data['swell_period_max']}s\n"
                 f"- Swell Direction: {data['primary_wave_direction']}\n"
-                f"- Water Temperature: {data['sea_surface_temp_min']}-{data['sea_surface_temp_max']}°C\n\n"
+                f"- Water Temp: {data['sea_surface_temp_min']}-{data['sea_surface_temp_max']}°C\n\n"
             )
-        return forecast_text
+        return txt
 
     def _build_merged_spot_details(self) -> str:
-        """
-        Merge each spot's details with relevant forecast data into a cohesive block.
-        You can later improve this function by, for example, matching forecast
-        conditions to a spot's preferred tide if needed.
-        """
         details = "Surf Spot Details:\n"
         for spot in self.spots:
             details += self._format_spot_info(spot) + "\n\n"
         return details.strip()
 
     def generate_report(self, user_query: str) -> str:
-        """
-        Build a prompt that clearly delineates a general forecast section
-        and a surf spot section, and instruct the model to create a flowing,
-        integrated narrative.
-        """
-        # Build sections of the prompt
-        forecast_overview = self._format_forecast()
-        spot_details = self._build_merged_spot_details()
+        forecast_text = self._format_forecast()
+        spot_text = self._build_merged_spot_details()
 
-        prompt = f"""
-        You are a professional surf reporter tasked with creating a cohesive weekend surf report.
-        The report should flow as a single narrative that naturally integrates both the general forecast conditions
-        and the detailed characteristics of each surf spot and it should be very tailored to the user's query.
-
-        {forecast_overview}
-
-        {spot_details}
-
-        Using the above data, please write a 300-400 word surf report that:
-        - Explains the forecasted conditions (e.g., wave heights, water temperatures, and tide timings)
-        - Integrates each spot's features (surf level, crowd factor, etc.) with the forecast,
-        offering an analysis of how well the conditions suit the spot.
-        - Provides recommendations for surfers of various skill levels.
-        - Uses smooth transitions to connect the general forecast with the spot-specific details.
-
-        Pay close attention in all your responses to the user's query in terms of Faithfulness, Answer Relevancy and Context Relevancy.
-
-        User Query: {user_query}
-        """
-        response = self.model.generate_content(
-            contents=prompt,
-            safety_settings=self.safety_settings,
-            generation_config={
-                "temperature": self.temperature,  # Lower temperature for more factual output
-                "max_output_tokens": 1500
-            }
+        prompt = (
+            "You are a professional surf reporter tasked with creating a cohesive weekend surf report.\n\n"
+            f"{forecast_text}\n"
+            f"{spot_text}\n\n"
+            "Using the above data, please write a 300-400 word surf report that:\n"
+            "- Explains the forecasted conditions (e.g., wave heights, water temperatures, and tide timings)\n"
+            "- Integrates each spot's features (surf level, crowd factor, etc.) with the forecast\n"
+            "- Provides recommendations for surfers of various skill levels\n"
+            "- Uses smooth transitions to connect the forecast with spot details\n\n"
+            "Pay close attention to faithfulness, answer relevancy, and context relevancy.\n\n"
+            f"User Query: {user_query}"
         )
-        return response.text
+
+        # Build the two “messages” for the OpenAI call
+        role0 = "system" if self.model.startswith("gpt-4") else "developer"
+        first_msg = {"role": role0, "content": [{"type":"input_text","text":prompt}]}
+        user_msg  = {"role": "user", "content": [{"type":"input_text","text":user_query}]}
+        reasoning = {} if self.model.startswith("gpt-4") else {"effort":"medium"}
+
+        # Base kwargs for both models
+        call_kwargs = {
+            "model": self.model,
+            "input": [first_msg, user_msg],
+            "text": {"format": {"type": "text"}},
+            "reasoning": reasoning,
+            "tools": [],
+            "store": True,
+        }
+
+        # Only GPT-4-family supports these parameters
+        if not self.model.startswith("o3-mini"):
+            call_kwargs.update({
+                "temperature": self.temperature,
+                "max_output_tokens": self.max_tokens,
+                "top_p": 1,
+            })
+
+        resp = self.client.responses.create(**call_kwargs)
+
+        # Extract the assistant’s text from resp.output
+        for item in resp.output:
+            if getattr(item, "type", None) == "message":
+                return "".join(c.text for c in item.content)
+
+        return ""
