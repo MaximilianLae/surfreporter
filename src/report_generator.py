@@ -82,6 +82,7 @@ class SurfReportGenerator:
             "- Provides recommendations for surfers of various skill levels\n"
             "- Uses smooth transitions to connect the forecast with spot details\n\n"
             "Pay close attention to faithfulness, answer relevancy, and context relevancy.\n\n"
+            "Pay a lot of attention to the query that the user gives so you react really to his preferences."
             f"User Query: {user_query}"
         )
 
